@@ -4,89 +4,131 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract InternSBT is ERC721 {
+contract InternSBT is ERC721,Ownable{
     using ECDSA for bytes32;
 
-    // ── 数据结构────────────────────────────
+    // ── 极简数据结构 (仅占 1 个 Slot，极其省 Gas) ─────────────
+    // 不存储具体的业务 UUID，保护隐私的同时大幅降低上链成本
     struct InternCredential {
-        bytes32 companyDomainHash;  // bytes32 替换 string，省 Gas
-        uint32  internStart;
-        bool    isVerified;
+        bytes32 credentialHash; // 凭证唯一哈希 (对应后端生成的不可逆哈希)
+        bool    isActive;       // 凭证状态 (true为有效，false为被吊销)
     }
 
     // ── 状态变量 ──────────────────────────────────────
     address public trustedBackend;
-    uint256 private _tokenIdCounter;//编号，第一个人1号，第二个人2号
+    uint256 private _tokenIdCounter; // 链上的自增 ID
 
-    mapping(address => InternCredential) public credentials;
-    mapping(address => bool) public hasSBT;
+    // 核心映射：tokenId => 凭证信息
+    mapping(uint256 => InternCredential) public credentials;
+    
+    // 防重放攻击：记录某个凭证哈希是否已经铸造过 SBT
+    mapping(bytes32 => bool) public isCredentialHashUsed;
+    
+    // DAO 统计总人数使用：记录真实自然人数量
+    mapping(address => bool) public isUniqueHolder;
+    uint256 public totalUniqueHolders;
 
-    // ── 事件 ──────────────────────────────────────────
-    event SBTMinted(address indexed to, bytes32 companyDomainHash, uint256 tokenId);
+    // ── 事件 (极致隐私设计) ───────────────────────────
+    // 仅抛出不可逆的 credentialHash，后端监听此事件即可在 DB 中完成绑定
+    // 外部人员无法通过链上数据反推用户的真实实习公司
+    event SBTMinted(
+        address indexed walletAddress, 
+        uint256 indexed tokenId, 
+        bytes32 indexed credentialHash 
+    );
 
-    // ── 构造函数 ──────────────────────────────────────
-    constructor(address _trustedBackend) ERC721("InternSBT", "ISBT") {//整套认证统一叫"InternSBT", 简称"ISBT"
+    event CredentialRevoked(uint256 indexed tokenId);
+
+   constructor(address _trustedBackend) ERC721("InternSBT", "ISBT") Ownable(msg.sender) {
+        require(_trustedBackend != address(0), "Invalid backend address"); // 顺便把第3点的零地址检查加上
         trustedBackend = _trustedBackend;
+        _tokenIdCounter = 1;
+    }
+    
+    event TrustedBackendUpdated(address indexed oldBackend, address indexed newBackend);
+
+    function setTrustedBackend(address _newBackend) external onlyOwner {
+        require(_newBackend != address(0), "Cannot be zero address");
+        emit TrustedBackendUpdated(trustedBackend, _newBackend);
+        trustedBackend = _newBackend;
+    }
+    
+    function revokeCredential(uint256 _tokenId) external onlyOwner {
+    require(_ownerOf(_tokenId) != address(0), "Token does not exist");
+    require(credentials[_tokenId].isActive, "Already revoked");
+
+    credentials[_tokenId].isActive = false;
+    emit CredentialRevoked(_tokenId); 
     }
 
     // ── 核心函数：铸造 SBT ────────────────────────────
     function mintSBT(
-        bytes32 _companyDomain,
-        uint32  _internStart,
-        bytes memory _signature
+        string calldata _credentialId,   // 后端生成的凭证 UUID（仅用于验签，不上链存储）
+        string calldata _companyId,      // 后端生成的公司 UUID（仅用于验签，不上链存储）
+        bytes32 _credentialHash,         // 后端生成的凭证内容哈希
+        uint256 _expireTime,             // 签名过期时间戳
+        bytes calldata _signature        // 后端签发的 ECDSA 签名
     ) external {
-        // 1. 每个钱包只能有一个 SBT
-        require(!hasSBT[msg.sender], "Already has SBT");
+        // 1. 安全校验：时间有效性与防重放攻击
+        require(block.timestamp <= _expireTime, "Signature has expired");
+        require(!isCredentialHashUsed[_credentialHash], "Credential hash already minted");
 
-        // 2. 验证后端签名（加入 chainId 防重放攻击）
+        // 2. 严格对齐后端文档的 Message Hash 生成规则
         bytes32 messageHash = keccak256(
-            abi.encodePacked(
-                msg.sender,
-                _companyDomain,
-                _internStart,
-                block.chainid    // ← 防止跨链重放
+            abi.encode(
+                _credentialId,     
+                msg.sender,        
+                _companyId,        
+                _credentialHash,   
+                _expireTime        
             )
         );
         bytes32 ethSignedHash = MessageHashUtils.toEthSignedMessageHash(messageHash);
         address signer = ECDSA.recover(ethSignedHash, _signature);
         require(signer == trustedBackend, "Invalid signature");
 
-        // 3. 铸造
+        // 3. 统计独立人数 (供 DAO 治理计算法定人数)
+        if (!isUniqueHolder[msg.sender]) {
+            isUniqueHolder[msg.sender] = true;
+            totalUniqueHolders++;
+        }
+
+        // 4. 标记该凭证哈希已使用，防止重复提交流程
+        isCredentialHashUsed[_credentialHash] = true;
+
+        // 5. 铸造 ERC721 Token
         uint256 tokenId = _tokenIdCounter++;
         _safeMint(msg.sender, tokenId);
 
-        // 4. 存储凭证
-     credentials[msg.sender] = InternCredential({
-    companyDomainHash: keccak256(abi.encodePacked(_companyDomain)),
-    internStart: _internStart,
-    isVerified: true
-});
-        hasSBT[msg.sender] = true;
+        // 6. 存储凭证核心状态
+        credentials[tokenId] = InternCredential({
+            credentialHash: _credentialHash,
+            isActive: true
+        });
 
-        emit SBTMinted(msg.sender, _companyDomain, tokenId);
+        // 7. 触发事件，通知后端完成链下 DB 的关联更新
+        emit SBTMinted(msg.sender, tokenId, _credentialHash);
     }
 
-    // ── 新增：获取 credentialId ───────────────────
-function getCredentialId(address _holder)
-    external view returns (bytes32)
-{
-    require(hasSBT[_holder], "No SBT found");
-    return credentials[_holder].companyDomainHash;  // ← 改这里
-}
+    // ── 检查凭证是否有效 ──────────────────────────────
+    // 供 ReviewContract 在提交评价时调用
+    function isValidCredential(uint256 _tokenId) external view returns (bool) {
+        return _ownerOf(_tokenId) != address(0) && credentials[_tokenId].isActive;
+    }
+
+    // ── 获取 DAO 法定人数基数 ────────────────────────
+    // 供 ReviewDAO 计算一人一票的 Quorum 使用
+    function totalSupply() external view returns (uint256) {
+        return totalUniqueHolders; 
+    }
 
     // ── 灵魂绑定：禁止转让 ────────────────────────────
-    function _update(
-        address to,
-        uint256 tokenId,
-        address auth
-    ) internal override returns (address) {
+    // 覆盖 ERC721 的 _update 函数，确保 SBT 无法被转移或交易
+    function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
         address from = _ownerOf(tokenId);
         require(from == address(0), "SBT: non-transferable");
         return super._update(to, tokenId, auth);
     }
-
-    // ── 工具函数：域名转 bytes32（前端调用参考）────────
-    // 前端传参时用 ethers.js:
-    // ethers.encodeBytes32String("bytedance.com")
 }
