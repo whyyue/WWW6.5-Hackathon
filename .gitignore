@@ -1,0 +1,40 @@
+# Environment variables — NEVER commit real secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# macOS system files
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build output
+dist/
+build/
+out/
+
+# Hardhat / Foundry artifacts & cache
+artifacts/
+cache/
+typechain/
+typechain-types/
+
+# Coverage
+coverage/
+coverage.json
+lcov.info
+
+# Claude Code
+.claude/
+
+# Misc
+*.local
+*.log
