@@ -3,19 +3,19 @@ import { ContractService } from './contract.service';
 import { IPFSService } from './ipfs.service';
 
 export class ReputationService {
-  // 1. 获取公司的完整声誉数据（用于声誉看板）
+  // 1. 获取公司的完整声誉数据（用于声誉看板，已删除导师姓名）
   static async getCompanyReputation(
-    companyName: string,
+    mentorCompany: string,
     viewerWalletAddress?: `0x${string}`
   ): Promise<CompanyReputation> {
     // 1. 从合约获取该公司的所有评价
-    const reviews = await ContractService.getCompanyReviews(companyName);
+    const reviews = await ContractService.getCompanyReviews(mentorCompany);
     const reviewCount = reviews.length;
 
     // 2. 如果没有评价，返回空数据
     if (reviewCount === 0) {
       return {
-        companyName,
+        mentorCompany,
         reviewCount: 0,
         overallAverageScore: 0,
         dimensionAverageScores: Object.values(ReviewDimension).map((dimension) => ({
@@ -31,7 +31,7 @@ export class ReputationService {
     const totalScore = reviews.reduce((sum, review) => sum + Number(review.overallScore), 0);
     const overallAverageScore = Number((totalScore / reviewCount).toFixed(1));
 
-    // 4. 计算每个维度的平均分
+    // 4. 计算每个维度的平均分（简化版）
     const dimensionAverageScores: DimensionScore[] = Object.values(ReviewDimension).map((dimension) => ({
       dimension,
       score: overallAverageScore,
@@ -39,7 +39,7 @@ export class ReputationService {
     }));
 
     // 5. 处理最新评价：只有查看者持有SBT，才返回解密后的详细内容
-    const latestReviews = reviews.slice(-5).reverse();
+    const latestReviews = reviews.slice(-5).reverse(); // 取最新5条
     const hasSBT = viewerWalletAddress
       ? await ContractService.checkUserHasSBT(viewerWalletAddress)
       : false;
@@ -51,7 +51,7 @@ export class ReputationService {
         if (!hasSBT) {
           return {
             walletAddress: review.reviewer,
-            companyName: review.companyName,
+            mentorCompany: review.mentorCompany,
             rawReviewContent: '持有SBT即可查看详细评价内容',
             aiResult: {
               overallScore: review.overallScore,
@@ -69,7 +69,7 @@ export class ReputationService {
           const rawContent = await IPFSService.getDecryptedReview(review.ipfsCid);
           return {
             walletAddress: review.reviewer,
-            companyName: review.companyName,
+            mentorCompany: review.mentorCompany,
             rawReviewContent: rawContent,
             aiResult: {
               overallScore: review.overallScore,
@@ -83,7 +83,7 @@ export class ReputationService {
         } catch (error) {
           return {
             walletAddress: review.reviewer,
-            companyName: review.companyName,
+            mentorCompany: review.mentorCompany,
             rawReviewContent: '内容获取失败',
             aiResult: {
               overallScore: review.overallScore,
@@ -100,7 +100,7 @@ export class ReputationService {
 
     // 7. 返回完整的声誉数据
     return {
-      companyName,
+      mentorCompany,
       reviewCount,
       overallAverageScore,
       dimensionAverageScores,
@@ -108,8 +108,9 @@ export class ReputationService {
     };
   }
 
-  // 2. 获取热门公司榜单
+  // 2. 获取热门公司榜单（按评价数量和平均分排序）
   static async getHotCompanyList(limit: number = 10): Promise<CompanyReputation[]> {
+    // 黑客松MVP简化版，后续可以从合约获取全量公司数据排序
     return [];
   }
 }

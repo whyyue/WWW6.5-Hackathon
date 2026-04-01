@@ -24,6 +24,14 @@ interface DialogProps {
 function Dialog({ open = false, onOpenChange, children }: DialogProps) {
   const [internal, setInternal] = React.useState(open);
   const isControlled = onOpenChange !== undefined;
+
+  // 同步外部 open 值的变化
+  React.useEffect(() => {
+    if (isControlled) {
+      setInternal(open);
+    }
+  }, [open, isControlled]);
+
   const value = isControlled
     ? { open, onOpenChange: onOpenChange! }
     : { open: internal, onOpenChange: setInternal };

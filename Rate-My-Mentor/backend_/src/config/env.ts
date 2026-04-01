@@ -8,7 +8,7 @@ dotenv.config();
 const envSchema = z.object({
   PORT: z.string().default('3001'),
   NODE_ENV: z.enum(['development', 'production']).default('development'),
-  OPENAI_API_KEY: z.string().min(1, 'OpenAI API Key 必填'),
+  OPENAI_API_KEY: z.string().min(1, ''),
   OPENAI_MODEL: z.string().default('gpt-4o'),
   PINATA_API_KEY: z.string().min(1, 'Pinata API Key 必填'),
   PINATA_API_SECRET: z.string().min(1, 'Pinata API Secret 必填'),
@@ -21,7 +21,7 @@ const envSchema = z.object({
   CONTRACT_ABI: z.string().default('[]'),
   RPC_URL: z.string().min(1, '区块链RPC地址 必填'),
   CHAIN_ID: z.string().default('11155111'),
-  ENCRYPTION_KEY: z.string().length(32, '加密密钥必须为32位字符串'),
+  ENCRYPTION_KEY: z.string().length(32, ''),
 });
 
 // 校验并导出环境变量
