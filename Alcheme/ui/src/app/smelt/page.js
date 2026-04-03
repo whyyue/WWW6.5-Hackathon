@@ -2,8 +2,8 @@
 import { useState, useEffect } from 'react';
 
 export default function Smelt() {
-  const [ores, setOres] = useState([]);       // 矿石列表
-  const [selectedIds, setSelectedIds] = useState([]); // 选中的矿石ID
+  const [ores, setOres] = useState([]);
+  const [selectedIds, setSelectedIds] = useState([]);
 
   // ================================
   // 【接口 1】获取我的所有矿石
@@ -12,11 +12,10 @@ export default function Smelt() {
   useEffect(() => {
     const fetchOres = async () => {
       try {
-        const res = await fetch('/api/ores');
+        const res = await fetch('https://22bcdad4-a6ad-4285-adac-6e7d7e867c52-00-2rkqab45ars9.janeway.replit.dev/api/ores');
         const data = await res.json();
         setOres(data);
       } catch (err) {
-        // 演示假数据
         setOres([
           { id: 1, title: "学习3小时", dimension: "智慧" },
           { id: 2, title: "运动30分钟", dimension: "韧性" },
@@ -27,7 +26,6 @@ export default function Smelt() {
     fetchOres();
   }, []);
 
-  // 勾选/取消勾选
   const toggleSelect = (id) => {
     if (selectedIds.includes(id)) {
       setSelectedIds(selectedIds.filter(item => item !== id));
@@ -47,7 +45,7 @@ export default function Smelt() {
     }
 
     try {
-      const res = await fetch('/api/smelt', {
+      const res = await fetch('https://22bcdad4-a6ad-4285-adac-6e7d7e867c52-00-2rkqab45ars9.janeway.replit.dev/api/smelt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ oreIds: selectedIds }),
@@ -55,7 +53,7 @@ export default function Smelt() {
 
       const result = await res.json();
       alert("合成成功！卡片ID：" + result.cardId);
-      setSelectedIds([]); // 清空选择
+      setSelectedIds([]);
     } catch (err) {
       alert("演示模式：合成成功！");
     }
