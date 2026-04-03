@@ -11,11 +11,10 @@ export default function Stats() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch('/api/stats');
+        const res = await fetch('https://22bcdad4-a6ad-4285-adac-6e7d7e867c52-00-2rkqab45ars9.janeway.replit.dev/api/stats');
         const data = await res.json();
         setStats(data);
       } catch (err) {
-        // 演示假数据
         setStats({
           radar: [85, 70, 90, 65, 80, 75],
           heat: [5, 3, 7, 2, 8, 4, 6],
