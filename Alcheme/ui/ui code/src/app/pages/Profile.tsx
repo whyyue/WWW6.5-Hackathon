@@ -47,24 +47,36 @@ export default function Profile() {
       setEditingNickname('Chibi Mage');
     }
 
-    // Load awakened medals from localStorage
-    const loadMedals = () => {
-      const medalsData = localStorage.getItem('awakenedMedals');
-      if (medalsData) {
-        const loadedMedals = JSON.parse(medalsData);
-        setMedals(loadedMedals);
+    // ==============================
+    // 🔌 只改这里：从接口拉取勋章/成就
+    // ==============================
+    const loadMedals = async () => {
+      try {
+        const res = await fetch("https://22bcdad4-a6ad-4285-adac-6e7d7e867c52-00-2rkqab45ars9.janeway.replit.dev/api/medals");
+        const data = await res.json();
+        setMedals(data.data || []);
+      } catch (e) {
+        // 接口异常本地兜底
+        const medalsData = localStorage.getItem('awakenedMedals');
+        if (medalsData) {
+          setMedals(JSON.parse(medalsData));
+        }
       }
     };
 
     loadMedals();
 
-    // Listen for updates when new medals are awakened
+    // Listen for updates
     const handleMedalsUpdate = () => {
       loadMedals();
     };
 
     window.addEventListener('cardsUpdated', handleMedalsUpdate);
-    return () => window.removeEventListener('cardsUpdated', handleMedalsUpdate);
+    window.addEventListener('oresUpdated', handleMedalsUpdate);
+    return () => {
+      window.removeEventListener('cardsUpdated', handleMedalsUpdate);
+      window.removeEventListener('oresUpdated', handleMedalsUpdate);
+    };
   }, []);
 
   const handleSaveNickname = () => {
@@ -598,7 +610,16 @@ export default function Profile() {
         </div>
       )}
 
-      <style>{`\n        @keyframes owlFloat {\n          0%, 100% {\n            transform: translateY(0px);\n          }\n          50% {\n            transform: translateY(-10px);\n          }\n        }\n      `}</style>
+      <style>{`
+        @keyframes owlFloat {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+      `}</style>
     </div>
   );
 }
