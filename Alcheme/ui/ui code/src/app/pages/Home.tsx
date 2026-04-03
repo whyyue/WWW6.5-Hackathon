@@ -12,7 +12,6 @@ import alchemeLogo from 'figma:asset/a82dc1e92d5a60168dfc16bfe3402cf3da775301.pn
 import parchmentScroll from 'figma:asset/6e9c0278614ee59e3fa39d8a0594cbf4800e013a.png';
 import { Sparkles } from 'lucide-react';
 
-// Import crystal images for task icons
 import crystal1 from 'figma:asset/6e4310e7eedb7599a8783ae85915384fa1cdb41a.png';
 import crystal2 from 'figma:asset/c9271aa2b5c4b3ac4fd8114695354054ec89c320.png';
 import crystal3 from 'figma:asset/422998f75fa5b2894d6c25e42f9caa86c99f9321.png';
@@ -26,25 +25,39 @@ export default function Home() {
 
   const crystalIcons = [crystal1, crystal2, crystal3, crystal4, crystal5, crystal6, crystal7];
 
-  // Handle collect button click
-  const handleCollect = (taskName: string) => {
-    // Save ore data with content
-    const oresData = localStorage.getItem('collectedOres');
-    const ores = oresData ? JSON.parse(oresData) : [];
-    
-    const newOre = {
-      id: `ore-${Date.now()}-${Math.random()}`,
-      type: 'task',
-      content: taskName,
-      date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '/'),
-      color: ''
-    };
-    
-    ores.push(newOre);
-    localStorage.setItem('collectedOres', JSON.stringify(ores));
-    
-    // Dispatch event to notify other components
-    window.dispatchEvent(new Event('oresUpdated'));
+  // ==============================
+  // 🔌 只改这里：对接采集矿石接口
+  // ==============================
+  const handleCollect = async (taskName: string) => {
+    try {
+      const res = await fetch("https://22bcdad4-a6ad-4285-adac-6e7d7e867c52-00-2rkqab45ars9.janeway.replit.dev/api/mine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "任务采集",
+          content: taskName
+        })
+      });
+
+      await res.json();
+      window.dispatchEvent(new Event('oresUpdated'));
+      alert("采集成功");
+    } catch (e) {
+      // 本地兜底
+      const oresData = localStorage.getItem('collectedOres');
+      const ores = oresData ? JSON.parse(oresData) : [];
+      
+      const newOre = {
+        id: `ore-${Date.now()}`,
+        type: 'task',
+        content: taskName,
+        date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' })
+      };
+      
+      ores.push(newOre);
+      localStorage.setItem('collectedOres', JSON.stringify(ores));
+      window.dispatchEvent(new Event('oresUpdated'));
+    }
   };
 
   return (
@@ -62,7 +75,6 @@ export default function Home() {
         fontFamily: "'Cormorant Garamond', serif"
       }}
     >
-      {/* Magical particles overlay */}
       <div className="absolute inset-0 pointer-events-none">
         {[...Array(30)].map((_, i) => {
           const duration = 2 + Math.random() * 3;
@@ -86,12 +98,9 @@ export default function Home() {
         })}
       </div>
 
-      {/* Main container with border */}
       <div className="relative w-full max-w-7xl bg-gradient-to-br from-purple-100/40 via-pink-50/30 to-cyan-100/40 rounded-3xl shadow-2xl border-4 border-amber-200/60 backdrop-blur-sm p-8">
         
-        {/* Top section - Title and Navigation */}
         <div className="flex items-start justify-between mb-6">
-          {/* Title and tagline - Using logo image */}
           <div>
             <img 
               src={alchemeLogo} 
@@ -100,7 +109,6 @@ export default function Home() {
             />
           </div>
 
-          {/* Navigation buttons */}
           <div className="flex gap-4">
             <button 
               onClick={() => navigate('/')}
@@ -129,10 +137,8 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Main content area */}
         <div className="grid grid-cols-12 gap-8 mt-8">
           
-          {/* Left - Character */}
           <div className="col-span-4 flex items-center justify-center">
             <div className="relative">
               <img 
@@ -148,7 +154,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Center - Crystal and Magic Orbs - Clickable to enter mine */}
           <div className="col-span-4 flex flex-col items-center justify-center gap-6">
             <button 
               onClick={() => navigate('/mine')}
@@ -164,10 +169,8 @@ export default function Home() {
                   animation: 'float 3s ease-in-out infinite'
                 }}
               />
-              {/* Glow effect */}
               <div className="absolute inset-0 bg-gradient-radial from-purple-300/30 via-transparent to-transparent blur-2xl" />
               
-              {/* Click hint */}
               <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap">
                 <span 
                   className="text-sm animate-pulse"
@@ -194,11 +197,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right - Scroll with tasks and owl */}
           <div className="col-span-4 flex flex-col items-center justify-start relative pt-4">
-            {/* Combined owl and parchment - owl sits on top of parchment */}
             <div className="relative w-full max-w-xs flex flex-col items-center">
-              {/* Steampunk Owl - positioned to overlap parchment */}
               <div className="relative z-10 mb-[-30px]">
                 <img 
                   src={owlImage} 
@@ -210,19 +210,15 @@ export default function Home() {
                 />
               </div>
 
-              {/* Parchment scroll with tasks */}
               <div className="relative w-full">
-                {/* Parchment background image */}
                 <img 
                   src={parchmentScroll} 
                   alt="Parchment Scroll" 
                   className="w-full h-auto drop-shadow-xl"
                 />
                 
-                {/* Task content overlay */}
                 <div className="absolute inset-0 flex items-center justify-center px-12 py-12">
                   <div className="space-y-5 w-full">
-                    {/* Task items */}
                     {[
                       'Read: Walden',
                       'Run: 5km',
@@ -233,7 +229,6 @@ export default function Home() {
                         className="flex items-center justify-between gap-3"
                       >
                         <div className="flex items-center gap-2 flex-1">
-                          {/* Crystal icon */}
                           <img 
                             src={crystalIcons[idx % crystalIcons.length]}
                             alt="crystal"
@@ -251,7 +246,6 @@ export default function Home() {
                             {task}
                           </span>
                         </div>
-                        {/* Custom collect button */}
                         <button 
                           onClick={() => handleCollect(task)}
                           className="hover:scale-105 transition-all hover:shadow-md flex-shrink-0"
