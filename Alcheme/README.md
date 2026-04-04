@@ -61,27 +61,24 @@ Identity is not a static state. You can continuously inject new cards into exist
 
 ## 📦 Quick Start (Local Run)
 
-To launch the Alcheme Demo locally:
+To launch the Alcheme Demo locally, follow these steps:
 
-Bash
-
-# 
-
-`# 1. Clone the repository
-git clone https://github.com/your-username/alcheme.git
+```bash
+# 1. Clone the repository
+git clone [https://github.com/your-username/alcheme.git](https://github.com/your-username/alcheme.git)
 
 # 2. Install dependencies
 cd alcheme
 npm install
 
 # 3. Set Environment Variables
-# Create a .env file and add your API keys
-OPENAI_API_KEY=your_api_key_here
+# Create a .env file in the root directory and add your API keys
+echo "OPENAI_API_KEY=your_api_key_here" > .env
 
 # 4. Start the development server
-npm run dev`
+npm run dev
 
-Open [http://localhost:3000](https://www.google.com/search?q=http://localhost:3000) to begin your alchemy journey.
+Open [Alcheme Live Demo](https://tux-assist-66534042.figma.site/awaken) to begin your alchemy journey.
 
 ---
 
