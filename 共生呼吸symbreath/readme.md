@@ -80,7 +80,7 @@ Users stake tokens on-chain to complete meditation challenges. Successful comple
 <summary>中文 / 点击展开</summary>
 
 - 🌐 **网络:** Avalanche Fuji Testnet (Chain ID: 43113)  
-- 🏛 **合约地址:** `0x469D9009b50C17243DEf5927f2a6308BF8e1Dbc8`  
+- 🏛 **合约地址:** `0x8f7680E063BcF7068048D49D5f39AcaE34009D0C`  
 - 💝 **公益捐款地址:** `0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2`  
 - 🔍 **浏览器查看:** [Snowtrace](https://testnet.snowtrace.io/address/0x469D9009b50C17243DEf5927f2a6308BF8e1Dbc8)  
 
@@ -90,7 +90,7 @@ Users stake tokens on-chain to complete meditation challenges. Successful comple
 <summary>English / Click to expand</summary>
 
 - 🌐 **Network:** Avalanche Fuji Testnet (Chain ID: 43113)  
-- 🏛 **Contract Address:** `0x469D9009b50C17243DEf5927f2a6308BF8e1Dbc8`  
+- 🏛 **Contract Address:** `0x8f7680E063BcF7068048D49D5f39AcaE34009D0C`  
 - 💝 **Charity Address:** `0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2`  
 - 🔍 **Explorer:** [Snowtrace](https://testnet.snowtrace.io/address/0x469D9009b50C17243DEf5927f2a6308BF8e1Dbc8)  
 
@@ -100,7 +100,7 @@ Users stake tokens on-chain to complete meditation challenges. Successful comple
 
 ## 🎬 在线演示 / Live Demo
 
-- 链接: （填写部署网站）  
+- 链接: [Live Demo 演示地址](https://breathe-with-trees.lovable.app/) 
 - **前端代码 / Frontend:** 压缩文件包  
 - **后端 & 合约代码 / Backend & Contract:** sol 文件  
 

@@ -30,11 +30,22 @@ contract SymBreath is ERC721URIStorage, ReentrancyGuard, Ownable {
     event ChallengeSuccess(address indexed user, uint256 amountRefunded);
     event SBTClaimed(address indexed user, uint256 indexed tokenId);
     event ChallengeFailed(address indexed user, uint256 amountDonated);
+    event EmergencyReset(address indexed user); // 重置事件
 
     constructor() ERC721("SymBreath Badge", "SBT") Ownable(msg.sender) {
-        // 默认慈善地址
         charityAddress = 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2; 
         _nextTokenId = 1;
+    }
+
+    /// @notice 紧急重置函数：当用户状态卡死时，调用此函数强制重置 isActive 为 false
+    /// 注意：为了防止资金锁死，本函数仅重置状态，不处理退款。
+    /// 如果你希望重置时自动捐赠或退款，可以在此处加入逻辑。
+    function emergencyReset() external nonReentrant {
+        require(challenges[msg.sender].isActive, "No active challenge to reset");
+        
+        challenges[msg.sender].isActive = false;
+        
+        emit EmergencyReset(msg.sender);
     }
 
     /// @notice 质押 0.01 AVAX 开启挑战
@@ -75,11 +86,9 @@ contract SymBreath is ERC721URIStorage, ReentrancyGuard, Ownable {
         challenges[_user].isActive = false;
         challenges[_user].isCompleted = true;
 
-        // 1. 自动退款 0.01 AVAX
         (bool success, ) = payable(_user).call{value: stakeAmount}("");
         require(success, "Refund failed");
 
-        // 2. 铸造全链上图片勋章
         _mintSBTWithImage(_user);
         
         emit ChallengeSuccess(_user, stakeAmount);
@@ -92,15 +101,12 @@ contract SymBreath is ERC721URIStorage, ReentrancyGuard, Ownable {
         emit ChallengeFailed(_user, stakeAmount);
     }
     
-    /// @dev 生成全链上 SVG 元数据并铸造
     function _mintSBTWithImage(address _to) internal {
         uint256 tokenId = _nextTokenId++;
         _safeMint(_to, tokenId);
 
-        // 生成 SVG 图片内容
         string memory svg = _buildSVG(tokenId);
         
-        // 封装成 JSON 元数据
         string memory json = Base64.encode(bytes(string(abi.encodePacked(
             '{"name": "SymBreath Hero #', tokenId.toString(), '",',
             '"description": "Staked 0.01 AVAX and completed the challenge",',
@@ -109,13 +115,11 @@ contract SymBreath is ERC721URIStorage, ReentrancyGuard, Ownable {
 
         string memory finalTokenUri = string(abi.encodePacked("data:application/json;base64,", json));
         
-        // 设置 TokenURI
         _setTokenURI(tokenId, finalTokenUri);
         
         emit SBTClaimed(_to, tokenId);
     }
 
-    /// @dev 绘制金色奖牌 SVG
     function _buildSVG(uint256 _tokenId) internal pure returns (string memory) {
         return string(abi.encodePacked(
             '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350">',
@@ -129,11 +133,8 @@ contract SymBreath is ERC721URIStorage, ReentrancyGuard, Ownable {
         ));
     }
 
-    // --- 以下为修复报错的关键继承重写 ---
-
     function _update(address to, uint256 tokenId, address auth) internal override returns (address) {
         address from = _ownerOf(tokenId);
-        // 禁止转账逻辑 (SBT)
         if (from != address(0) && to != address(0)) {
             revert("SBT: Soulbound tokens cannot be transferred");
         }
