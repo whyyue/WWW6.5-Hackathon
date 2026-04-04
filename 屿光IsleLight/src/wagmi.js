@@ -4,7 +4,7 @@ import { avalancheFuji } from 'wagmi/chains'
 
 export const config = getDefaultConfig({
   appName: 'IsleLight',
-  projectId: '21fef4886a0f62625843647d5f98e74b', // WalletConnect Project ID
-  chains: [avalancheFuji], // Avalanche Fuji Testnet
+  projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || '21fef4886a0f62625843647d5f98e74b',
+  chains: [avalancheFuji],
   ssr: true,
 })
