@@ -208,6 +208,8 @@ export default function SelectPage() {
       return;
     }
 
+    // 清除旧选择，防止脏数据
+    useCardStore.getState().clearSelection();
     setSpreadType(spreadType);
 
     for (let i = 0; i < spread.cardCount; i++) {
